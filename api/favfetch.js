@@ -4,9 +4,9 @@ export const config = {
 };
 
 const customFavicons = {
-  'web.whatsapp.com': '/whatsapp.png',
-  'messenger.com': '/messenger.png'
-  // add more here
+  'web.whatsapp.com': 'https://web.whatsapp.com/favicon/2x/favicon/',
+  'messenger.com': '/messenger.png',
+  // Add more here
 };
 
 export default async function handler(req, res) {
@@ -16,26 +16,38 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Check if domain matches custom favicon overrides
   for (const key in customFavicons) {
     if (domain.includes(key)) {
-      // Serve the custom image as base64 data URI
+      const iconPath = customFavicons[key];
+
       try {
-        // Assuming these files are in the public folder (Next.js)
-        const fs = require('fs');
-        const path = require('path');
-        const filePath = path.join(process.cwd(), 'public', customFavicons[key].replace(/^\//, ''));
+        let buffer, mime;
 
-        const fileBuffer = fs.readFileSync(filePath);
-        // Infer mime type from extension
-        const ext = path.extname(filePath).toLowerCase();
-        let mime = 'image/png';
-        if (ext === '.ico') mime = 'image/x-icon';
-        else if (ext === '.svg') mime = 'image/svg+xml';
-        else if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
-        else if (ext === '.gif') mime = 'image/gif';
+        if (iconPath.startsWith('http')) {
+          // Remote URL fetch
+          const response = await fetch(iconPath);
+          if (!response.ok) throw new Error('Remote fetch failed');
+          buffer = await response.arrayBuffer();
+          mime = response.headers.get('content-type') || 'image/png';
+        } else {
+          // Local file read
+          const fs = require('fs');
+          const path = require('path');
+          const filePath = path.join(process.cwd(), 'public', iconPath.replace(/^\//, ''));
+          buffer = fs.readFileSync(filePath);
 
-        const base64 = fileBuffer.toString('base64');
+          const ext = path.extname(filePath).toLowerCase();
+          mime = {
+            '.ico': 'image/x-icon',
+            '.svg': 'image/svg+xml',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.png': 'image/png',
+          }[ext] || 'image/png';
+        }
+
+        const base64 = Buffer.from(buffer).toString('base64');
         const dataURI = `data:${mime};base64,${base64}`;
 
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,14 +55,14 @@ export default async function handler(req, res) {
         res.status(200).send(dataURI);
         return;
       } catch (err) {
-        console.error('Error reading custom favicon:', err);
+        console.error('Custom favicon error:', err);
         res.status(500).send('Custom favicon error');
         return;
       }
     }
   }
 
-  // Otherwise fetch from Google as usual
+  // Default Google favicon fallback
   try {
     const response = await fetch(`https://www.google.com/s2/favicons?sz=256&domain=${domain}`);
     if (!response.ok) {
