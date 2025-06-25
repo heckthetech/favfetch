@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><title>Favicon Fetch Proxy</title></head>
+<body>
+<script>
+  async function fetchFavicon(domain) {
+    try {
+      const url = `https://www.google.com/s2/favicons?sz=256&domain=${domain}`;
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return '';
+    }
+  }
+
+  async function main() {
+    const params = new URLSearchParams(window.location.search);
+    const domain = params.get('fetch');
+    if (!domain) {
+      document.body.textContent = 'Missing domain parameter';
+      return;
+    }
+    const dataUri = await fetchFavicon(domain);
+    if (!dataUri) {
+      document.body.textContent = 'Failed to fetch favicon';
+      return;
+    }
+    // Output the base64 URI as plain text response (so your extension can just fetch it)
+    document.body.textContent = dataUri;
+  }
+
+  main();
+</script>
+</body>
+</html>
