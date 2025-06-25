@@ -4,8 +4,8 @@ export const config = {
 };
 
 const customFavicons = {
-  'web.whatsapp.com': 'https://web.whatsapp.com/favicon/2x/favicon/',
-  'messenger.com': '/messenger.png',
+  'web.whatsapp.com': 'https://heckthetech.github.io/favfetch/api/whatsapp.png',
+  'messenger.com': 'https://heckthetech.github.io/favfetch/api/messenger.png',
   // Add more here
 };
 
