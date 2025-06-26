@@ -1,2 +1,1 @@
-console.log("your'e online");
-online = "1";
+console.log("your'e online");online = "1";
