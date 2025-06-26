@@ -12,55 +12,55 @@ const customFavicons = {
 };
 
 export default async function handler(req, res) {
-  const domain = req.query.fetch;
+  let domain = req.query.fetch;
   if (!domain) {
     res.status(400).send('Missing fetch param');
     return;
   }
 
-  for (const key in customFavicons) {
-    if (domain.includes(key)) {
-      const iconPath = customFavicons[key];
+  // Normalize input: remove protocol and www.
+  domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
 
-      try {
-        let buffer, mime;
+  const matchedKey = Object.keys(customFavicons).find((key) => domain.includes(key));
+  if (matchedKey) {
+    const iconPath = customFavicons[matchedKey];
 
-        if (iconPath.startsWith('http')) {
-          // Remote URL fetch
-          const response = await fetch(iconPath);
-          if (!response.ok) throw new Error('Remote fetch failed');
-          buffer = await response.arrayBuffer();
-          mime = response.headers.get('content-type') || 'image/png';
-        } else {
-          // Local file read
-          const fs = require('fs');
-          const path = require('path');
-          const filePath = path.join(process.cwd(), 'public', iconPath.replace(/^\//, ''));
-          buffer = fs.readFileSync(filePath);
+    try {
+      let buffer, mime;
 
-          const ext = path.extname(filePath).toLowerCase();
-          mime = {
-            '.ico': 'image/x-icon',
-            '.svg': 'image/svg+xml',
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.gif': 'image/gif',
-            '.png': 'image/png',
-          }[ext] || 'image/png';
-        }
+      if (iconPath.startsWith('http')) {
+        const response = await fetch(iconPath);
+        if (!response.ok) throw new Error('Remote fetch failed');
+        buffer = await response.arrayBuffer();
+        mime = response.headers.get('content-type') || 'image/png';
+      } else {
+        const fs = require('fs');
+        const path = require('path');
+        const filePath = path.join(process.cwd(), 'public', iconPath.replace(/^\//, ''));
+        buffer = fs.readFileSync(filePath);
 
-        const base64 = Buffer.from(buffer).toString('base64');
-        const dataURI = `data:${mime};base64,${base64}`;
-
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Content-Type', 'text/plain');
-        res.status(200).send(dataURI);
-        return;
-      } catch (err) {
-        console.error('Custom favicon error:', err);
-        res.status(500).send('Custom favicon error');
-        return;
+        const ext = path.extname(filePath).toLowerCase();
+        mime = {
+          '.ico': 'image/x-icon',
+          '.svg': 'image/svg+xml',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.png': 'image/png',
+        }[ext] || 'image/png';
       }
+
+      const base64 = Buffer.from(buffer).toString('base64');
+      const dataURI = `data:${mime};base64,${base64}`;
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Content-Type', 'text/plain');
+      res.status(200).send(dataURI);
+      return;
+    } catch (err) {
+      console.error(`Custom favicon error for ${domain}:`, err);
+      res.status(500).send('Custom favicon error');
+      return;
     }
   }
 
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/plain');
     res.status(200).send(dataURI);
   } catch (err) {
-    console.error(err);
+    console.error(`Default favicon fetch failed for ${domain}:`, err);
     res.status(500).send('Server error');
   }
 }
