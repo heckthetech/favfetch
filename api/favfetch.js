@@ -8,6 +8,9 @@ const customFavicons = {
   'messenger.com': 'https://heckthetech.github.io/favfetch/api/messenger.png',
   'youtube.com/watch?v=dQw4w9WgXcQ': 'https://heckthetech.github.io/favfetch/api/rick.gif',
   'rickastley.co.uk': 'https://heckthetech.github.io/favfetch/api/rick.gif',
+  'aparsclassroom.com': 'https://heckthetech.github.io/favfetch/api/acs.webp',
+  'mail.google.com': 'https://heckthetech.github.io/favfetch/api/gmail.png',
+  'drive.google.com': 'https://heckthetech.github.io/favfetch/api/gdrive.png',
   // Add more here
 };
 
@@ -19,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   // Normalize input: remove protocol and www.
-  domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+  domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase() ;
 
   const matchedKey = Object.keys(customFavicons).find((key) => domain.includes(key));
   if (matchedKey) {
