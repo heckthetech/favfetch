@@ -5,6 +5,7 @@ export const config = {
 
 const customFavicons = {
   'web.whatsapp.com': 'https://heckthetech.github.io/favfetch/api/whatsapp.png',
+  'whatsapp://': 'https://heckthetech.github.io/favfetch/api/whatsapp.png',
   'messenger.com': 'https://heckthetech.github.io/favfetch/api/messenger.png',
   'youtube.com/watch?v=dQw4w9WgXcQ': 'https://heckthetech.github.io/favfetch/api/rick.gif',
   'rickastley.co.uk': 'https://heckthetech.github.io/favfetch/api/rick.gif',
