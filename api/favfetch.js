@@ -16,16 +16,22 @@ const customFavicons = {
 };
 
 export default async function handler(req, res) {
-  let domain = req.query.fetch;
-  if (!domain) {
+  let raw = req.query.fetch;
+  if (!raw) {
     res.status(400).send('Missing fetch param');
     return;
   }
 
-  // Normalize input: remove protocol and www.
-  domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase() ;
+  raw = raw.toLowerCase();
+  let domain = raw;
 
-  const matchedKey = Object.keys(customFavicons).find((key) => domain.includes(key));
+  if (raw.startsWith('whatsapp://')) {
+    domain = 'whatsapp://';
+  } else if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    domain = raw.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+  }
+
+  const matchedKey = Object.keys(customFavicons).find((key) => raw.includes(key) || domain.includes(key));
   if (matchedKey) {
     const iconPath = customFavicons[matchedKey];
 
