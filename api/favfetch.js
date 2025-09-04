@@ -12,6 +12,9 @@ const customFavicons = {
   'aparsclassroom.com': 'https://heckthetech.github.io/favfetch/api/acs.webp',
   'mail.google.com': 'https://heckthetech.github.io/favfetch/api/gmail.png',
   'drive.google.com': 'https://heckthetech.github.io/favfetch/api/gdrive.png',
+  'docs.google.com': 'https://heckthetech.github.io/favfetch/api/gdocs.webp',
+  'docs.google.com': 'https://heckthetech.github.io/favfetch/api/gdocs.webp',
+  'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.png'
   // Add more here
 };
 
