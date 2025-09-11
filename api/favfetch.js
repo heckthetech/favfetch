@@ -14,7 +14,8 @@ const customFavicons = {
   'drive.google.com': 'https://heckthetech.github.io/favfetch/api/gdrive.png',
   'docs.google.com': 'https://heckthetech.github.io/favfetch/api/gdocs.webp',
   'docs.google.com': 'https://heckthetech.github.io/favfetch/api/gdocs.webp',
-  'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.png'
+  'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.png',
+  'excel.cloud.microsoft': 'https://heckthetech.github.io/favfetch/api/msexcel.jpg'
   // Add more here
 };
 
