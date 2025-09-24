@@ -12,10 +12,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "api/favfetch.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  ]
 }
