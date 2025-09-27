@@ -12,8 +12,9 @@ export const config = {
   - Re-encode flattened PNG using zlib deflate; return data:image/png;base64,...
   - On any failure or non-PNG -> return original data URI.
   - Reports to Formspree for:
-      * Google 404 responses (no favicon)
+      * Google 404/4xx responses (no favicon)
       * Any time a PNG was flattened (transparent -> background filled)
+      * Minimal server errors
 */
 
 import zlib from 'zlib';
@@ -334,7 +335,7 @@ function bufferToDataURI(buf, mime) {
 // Report small JSON to Formspree
 async function reportToFormspree(payload) {
   try {
-    // keep payload small and textual
+    // use global fetch (Node 18+ runtime/supported serverless runtimes)
     await fetch(FORMSPREE_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -344,7 +345,7 @@ async function reportToFormspree(payload) {
       body: JSON.stringify(payload)
     });
   } catch (e) {
-    // don't block; just log
+    // don't block user response; just log
     console.warn('Formspree report failed:', e && e.message);
   }
 }
@@ -438,7 +439,7 @@ export default async function handler(req, res) {
     source = 'google';
     const response = await fetch(`https://www.google.com/s2/favicons?sz=256&domain=${domain}`);
     if (!response.ok) {
-      // Report Google 404 (or other non-ok) to Formspree only when it's a 404 or 4xx
+      // Report Google 404 (or other non-ok) to Formspree only when it's a 4xx status
       if (response.status === 404 || (response.status >= 400 && response.status < 500)) {
         await reportToFormspree({
           event: 'google_404_or_4xx',
@@ -495,7 +496,7 @@ export default async function handler(req, res) {
     res.status(200).send(originalURI);
   } catch (err) {
     console.error('favfetch error:', err && err.message);
-    // optionally report server errors (kept minimal to avoid spam)
+    // minimal server error report
     try {
       await reportToFormspree({
         event: 'server_error',
