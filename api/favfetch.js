@@ -15,7 +15,12 @@ export const config = {
       * Google 404/4xx responses (no favicon)
       * Any time a PNG was flattened (transparent -> background filled)
       * Minimal server errors
+  - Supports bracketed fetch param: ?fetch={http://example.com/path}
+  - Supports silent reporting: &silent=true   (when true -> no Formspree posts)
 */
+
+// Simple in-memory dedupe (resets on cold start / redeploy — intended)
+const reportedDomains = new Set();
 
 import zlib from 'zlib';
 import { createHash } from 'crypto';
@@ -351,14 +356,33 @@ async function reportToFormspree(payload) {
 }
 
 export default async function handler(req, res) {
-  let rawOriginal = req.query.fetch;
-  if (!rawOriginal) {
+  let rawParam = req.query.fetch;
+  if (!rawParam) {
     res.status(400).send('Missing fetch param');
     return;
   }
 
-  rawOriginal = String(rawOriginal);
-  // rawLower used for domain-level matching and normalizing; rawOriginal preserved for case-sensitive custom keys
+  rawParam = String(rawParam);
+
+  // If the client wrapped the fetch value in { ... }, extract inner value.
+  // Example: ?fetch={http://www.unknownwebsite.com/}&silent=true
+  let extracted = rawParam;
+  if (extracted.startsWith('{')) {
+    const closeIdx = extracted.lastIndexOf('}');
+    if (closeIdx > 0) {
+      extracted = extracted.slice(1, closeIdx);
+    } else {
+      // malformed but attempt: drop the leading '{'
+      extracted = extracted.slice(1);
+    }
+  }
+
+  // silent param controls whether to post to Formspree
+  const silent = req.query.silent === 'true' || req.query.silent === '1';
+
+  // Keep a preserved-case version for custom key matching
+  let rawOriginal = extracted; // preserved
+  // lowercased for domain parsing/matching
   let raw = rawOriginal.toLowerCase();
   let domain = raw;
 
@@ -366,6 +390,12 @@ export default async function handler(req, res) {
     domain = 'whatsapp://';
   } else if (raw.startsWith('http://') || raw.startsWith('https://')) {
     domain = raw.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+  } else if (raw.includes('://')) {
+    // other protocols like mailto:, tg:// etc — use the protocol or fallback
+    domain = raw.split('://')[0];
+  } else {
+    // raw might be a plain domain with optional path, try to strip path
+    domain = raw.split('/')[0];
   }
 
   // Match custom favicons using original (case-sensitive) string OR the normalized domain
@@ -408,16 +438,19 @@ export default async function handler(req, res) {
               const pngOut = encodePNG(flattened, parsed.width, parsed.height);
               const outDataURI = bufferToDataURI(pngOut, 'image/png');
 
-              // Report flatten event to Formspree
-              await reportToFormspree({
-                event: 'flattened',
-                source: 'custom',
-                domain: domain || null,
-                original: rawOriginal,
-                transparentRatio: Number(transparentRatio.toFixed(4)),
-                avgLuma: Math.round(avgLuma),
-                timestamp: new Date().toISOString()
-              });
+              // Report flatten event to Formspree (only if not silent and not already reported)
+              if (!silent && !reportedDomains.has(domain)) {
+                await reportToFormspree({
+                  event: 'flattened',
+                  source: 'custom',
+                  domain: domain || null,
+                  original: rawOriginal,
+                  transparentRatio: Number(transparentRatio.toFixed(4)),
+                  avgLuma: Math.round(avgLuma),
+                  timestamp: new Date().toISOString()
+                });
+                reportedDomains.add(domain);
+              }
 
               res.setHeader('Access-Control-Allow-Origin', '*');
               res.setHeader('Content-Type', 'text/plain');
@@ -439,16 +472,20 @@ export default async function handler(req, res) {
     source = 'google';
     const response = await fetch(`https://www.google.com/s2/favicons?sz=256&domain=${domain}`);
     if (!response.ok) {
-      // Report Google 404 (or other non-ok) to Formspree only when it's a 4xx status
-      if (response.status === 404 || (response.status >= 400 && response.status < 500)) {
-        await reportToFormspree({
-          event: 'google_404_or_4xx',
-          source: 'google',
-          domain,
-          original: rawOriginal,
-          status: response.status,
-          timestamp: new Date().toISOString()
-        });
+      // Report Google 404 (or other non-ok) to Formspree only when it's a 4xx status,
+      // and only if not silent and not already reported.
+      if (!silent && (response.status === 404 || (response.status >= 400 && response.status < 500))) {
+        if (!reportedDomains.has(domain)) {
+          await reportToFormspree({
+            event: 'google_404_or_4xx',
+            source: 'google',
+            domain,
+            original: rawOriginal,
+            status: response.status,
+            timestamp: new Date().toISOString()
+          });
+          reportedDomains.add(domain);
+        }
       }
       res.status(response.status).send('Favicon fetch failed');
       return;
@@ -468,16 +505,19 @@ export default async function handler(req, res) {
             const pngOut = encodePNG(flattened, parsed.width, parsed.height);
             const outDataURI = bufferToDataURI(pngOut, 'image/png');
 
-            // Report flatten event to Formspree (source: google)
-            await reportToFormspree({
-              event: 'flattened',
-              source: 'google',
-              domain,
-              original: rawOriginal,
-              transparentRatio: Number(transparentRatio.toFixed(4)),
-              avgLuma: Math.round(avgLuma),
-              timestamp: new Date().toISOString()
-            });
+            // Report flatten event to Formspree (source: google) if not silent and not already reported
+            if (!silent && !reportedDomains.has(domain)) {
+              await reportToFormspree({
+                event: 'flattened',
+                source: 'google',
+                domain,
+                original: rawOriginal,
+                transparentRatio: Number(transparentRatio.toFixed(4)),
+                avgLuma: Math.round(avgLuma),
+                timestamp: new Date().toISOString()
+              });
+              reportedDomains.add(domain);
+            }
 
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Content-Type', 'text/plain');
@@ -496,14 +536,16 @@ export default async function handler(req, res) {
     res.status(200).send(originalURI);
   } catch (err) {
     console.error('favfetch error:', err && err.message);
-    // minimal server error report
+    // minimal server error report (only if not silent)
     try {
-      await reportToFormspree({
-        event: 'server_error',
-        domain: (req.query.fetch || '').toString().slice(0, 200),
-        message: err && err.message,
-        timestamp: new Date().toISOString()
-      });
+      if (! (req.query.silent === 'true' || req.query.silent === '1')) {
+        await reportToFormspree({
+          event: 'server_error',
+          domain: (req.query.fetch || '').toString().slice(0, 200),
+          message: err && err.message,
+          timestamp: new Date().toISOString()
+        });
+      }
     } catch (_) {}
     res.status(500).send('Server error');
   }
