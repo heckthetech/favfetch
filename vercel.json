@@ -1,4 +1,8 @@
 {
+  "version": 2,
+  "builds": [
+    { "src": "api/favfetch.js", "use": "@vercel/node" }
+  ],
   "rewrites": [
     { "source": "/favfetch", "destination": "/api/favfetch" }
   ],
@@ -12,10 +16,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "api/favfetch.js": {
-      "runtime": "@vercel/node"
-    }
-  }
+  ]
 }
