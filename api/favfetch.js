@@ -11,6 +11,9 @@ export const config = {
   - If >=50% transparent -> flatten onto white or black depending on avg luminance.
   - Re-encode flattened PNG using zlib deflate; return data:image/png;base64,...
   - On any failure or non-PNG -> return original data URI.
+  - Reports to Formspree for:
+      * Google 404 responses (no favicon)
+      * Any time a PNG was flattened (transparent -> background filled)
 */
 
 import zlib from 'zlib';
@@ -35,6 +38,7 @@ const customFavicons = {
 const ALPHA_THRESHOLD = 128;
 const TRANSPARENT_RATIO_THRESHOLD = 0.5;
 const LUMINANCE_THRESHOLD = 128;
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mwpqvkey';
 
 // Helpers: read big-endian uint32
 function readUInt32BE(buf, offset) {
@@ -327,14 +331,34 @@ function bufferToDataURI(buf, mime) {
   return `data:${mime};base64,${buf.toString('base64')}`;
 }
 
+// Report small JSON to Formspree
+async function reportToFormspree(payload) {
+  try {
+    // keep payload small and textual
+    await fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    // don't block; just log
+    console.warn('Formspree report failed:', e && e.message);
+  }
+}
+
 export default async function handler(req, res) {
-  let raw = req.query.fetch;
-  if (!raw) {
+  let rawOriginal = req.query.fetch;
+  if (!rawOriginal) {
     res.status(400).send('Missing fetch param');
     return;
   }
 
-  raw = String(raw).toLowerCase();
+  rawOriginal = String(rawOriginal);
+  // rawLower used for domain-level matching and normalizing; rawOriginal preserved for case-sensitive custom keys
+  let raw = rawOriginal.toLowerCase();
   let domain = raw;
 
   if (raw.startsWith('whatsapp://')) {
@@ -343,17 +367,22 @@ export default async function handler(req, res) {
     domain = raw.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
   }
 
-  const matchedKey = Object.keys(customFavicons).find((key) => raw.includes(key) || domain.includes(key));
+  // Match custom favicons using original (case-sensitive) string OR the normalized domain
+  const matchedKey = Object.keys(customFavicons).find(
+    (key) => rawOriginal.includes(key) || domain.includes(key)
+  );
+
   let iconPath = null;
   if (matchedKey) iconPath = customFavicons[matchedKey];
 
   try {
-    let buffer, mime;
+    let buffer, mime, source;
 
     if (iconPath) {
+      source = 'custom';
       if (iconPath.startsWith('http')) {
         const r = await fetch(iconPath);
-        if (!r.ok) throw new Error('Remote fetch failed');
+        if (!r.ok) throw new Error('Remote fetch failed for custom icon');
         const arr = await r.arrayBuffer();
         buffer = Buffer.from(arr);
         mime = r.headers.get('content-type') || 'image/png';
@@ -377,12 +406,24 @@ export default async function handler(req, res) {
               const flattened = flattenRGBA(parsed.data, bgHex);
               const pngOut = encodePNG(flattened, parsed.width, parsed.height);
               const outDataURI = bufferToDataURI(pngOut, 'image/png');
+
+              // Report flatten event to Formspree
+              await reportToFormspree({
+                event: 'flattened',
+                source: 'custom',
+                domain: domain || null,
+                original: rawOriginal,
+                transparentRatio: Number(transparentRatio.toFixed(4)),
+                avgLuma: Math.round(avgLuma),
+                timestamp: new Date().toISOString()
+              });
+
               res.setHeader('Access-Control-Allow-Origin', '*');
               res.setHeader('Content-Type', 'text/plain');
               res.status(200).send(outDataURI);
               return;
             } catch (e) {
-              // fallthrough to original
+              // fallthrough to original dataURI if flattening fails
             }
           }
         }
@@ -394,8 +435,20 @@ export default async function handler(req, res) {
     }
 
     // Default: fetch from Google favicon service
+    source = 'google';
     const response = await fetch(`https://www.google.com/s2/favicons?sz=256&domain=${domain}`);
     if (!response.ok) {
+      // Report Google 404 (or other non-ok) to Formspree only when it's a 404 or 4xx
+      if (response.status === 404 || (response.status >= 400 && response.status < 500)) {
+        await reportToFormspree({
+          event: 'google_404_or_4xx',
+          source: 'google',
+          domain,
+          original: rawOriginal,
+          status: response.status,
+          timestamp: new Date().toISOString()
+        });
+      }
       res.status(response.status).send('Favicon fetch failed');
       return;
     }
@@ -413,6 +466,18 @@ export default async function handler(req, res) {
             const flattened = flattenRGBA(parsed.data, bgHex);
             const pngOut = encodePNG(flattened, parsed.width, parsed.height);
             const outDataURI = bufferToDataURI(pngOut, 'image/png');
+
+            // Report flatten event to Formspree (source: google)
+            await reportToFormspree({
+              event: 'flattened',
+              source: 'google',
+              domain,
+              original: rawOriginal,
+              transparentRatio: Number(transparentRatio.toFixed(4)),
+              avgLuma: Math.round(avgLuma),
+              timestamp: new Date().toISOString()
+            });
+
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Content-Type', 'text/plain');
             res.status(200).send(outDataURI);
@@ -430,6 +495,15 @@ export default async function handler(req, res) {
     res.status(200).send(originalURI);
   } catch (err) {
     console.error('favfetch error:', err && err.message);
+    // optionally report server errors (kept minimal to avoid spam)
+    try {
+      await reportToFormspree({
+        event: 'server_error',
+        domain: (req.query.fetch || '').toString().slice(0, 200),
+        message: err && err.message,
+        timestamp: new Date().toISOString()
+      });
+    } catch (_) {}
     res.status(500).send('Server error');
   }
 }
