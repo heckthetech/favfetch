@@ -40,7 +40,9 @@ const customFavicons = {
   'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.webp',
   'excel.cloud.microsoft': 'https://heckthetech.github.io/favfetch/api/msexcel.webp',
   'gilmannewport.portalced.com': 'https://heckthetech.github.io/favfetch/api/gilm.webp',
-  'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp'
+  'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp',
+  '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp'
+
 };
 
 
