@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    { "source": "/favfetch", "destination": "/api/favfetch" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "script-src 'self' https://heckthetech.vercel.app 'wasm-unsafe-eval' 'inline-speculation-rules'; object-src 'none';"
+        }
+      ]
+    }
+  ]
+}
