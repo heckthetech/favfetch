@@ -41,7 +41,9 @@ const customFavicons = {
   'excel.cloud.microsoft': 'https://heckthetech.github.io/favfetch/api/msexcel.webp',
   'gilmannewport.portalced.com': 'https://heckthetech.github.io/favfetch/api/gilm.webp',
   'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp',
-  '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp'
+  '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp',
+  'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp'
+
 
 };
 
