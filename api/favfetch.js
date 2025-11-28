@@ -42,7 +42,9 @@ const customFavicons = {
   'gilmannewport.portalced.com': 'https://heckthetech.github.io/favfetch/api/gilm.webp',
   'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp',
   '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp',
-  'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp'
+  'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp',
+  'robininsights.github.io': 'https://heckthetech.github.io/favfetch/api/robininsights.webp'
+  
 
 
 };
