@@ -44,9 +44,6 @@ const customFavicons = {
   '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp',
   'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp',
   'robininsights.github.io': 'https://heckthetech.github.io/favfetch/api/robininsights.webp'
-  
-
-
 };
 
 
@@ -417,10 +414,10 @@ export default async function handler(req, res) {
   if (matchedKey) iconPath = customFavicons[matchedKey];
 
   try {
-    let buffer, mime, source;
+    let buffer, mime, sourceName;
 
     if (iconPath) {
-      source = 'custom';
+      sourceName = 'custom';
       if (iconPath.startsWith('http')) {
         const r = await fetch(iconPath);
         if (!r.ok) throw new Error('Remote fetch failed for custom icon');
@@ -435,9 +432,72 @@ export default async function handler(req, res) {
         const ext = require('path').extname(filePath).toLowerCase();
         mime = { '.ico':'image/x-icon', '.svg':'image/svg+xml', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.gif':'image/gif', '.png':'image/png', '.webp':'image/webp' }[ext] || 'image/png';
       }
-      const dataURI = bufferToDataURI(buffer, mime);
-      // try PNG processing below if png
-      if (mime === 'image/png') {
+    } else {
+      // New Logic: Fetch from best source (replicates c.js strategy)
+      // Sources to race/check
+      const sources = [
+        { url: `https://unavatar.io/${domain}`, name: 'unavatar' },
+        { url: `https://logo.clearbit.com/${domain}?size=512`, name: 'clearbit' },
+        { url: `https://www.google.com/s2/favicons?sz=256&domain=${domain}`, name: 'google' },
+        { url: `https://icons.duckduckgo.com/ip3/${domain}.ico`, name: 'ddg' }
+      ];
+
+      let winningResponse = null;
+      let winningSource = null;
+
+      // Parallel fetch
+      const promises = sources.map(async (src) => {
+        try {
+          const r = await fetch(src.url);
+          if (r.ok) {
+              const contentType = r.headers.get('content-type');
+              if (contentType && (contentType.startsWith('image/') || contentType === 'application/octet-stream')) {
+                return { r, src };
+              }
+          }
+        } catch(e) {}
+        return null;
+      });
+
+      const results = await Promise.all(promises);
+
+      // Prioritize results based on source order (effectively mimics "best quality")
+      // Priority: Unavatar > Clearbit > Google > DDG
+      // We look for the first non-null result in the order of the 'sources' array
+      for (let i = 0; i < sources.length; i++) {
+          const found = results[i]; // results index matches sources index
+          if (found) {
+              winningResponse = found.r;
+              winningSource = found.src.name;
+              break;
+          }
+      }
+
+      if (!winningResponse) {
+          // All failed, report if not silent
+           if (!silent && !reportedDomains.has(domain)) {
+              await reportToFormspree({
+                event: 'all_sources_failed',
+                source: 'all',
+                domain,
+                original: rawOriginal,
+                timestamp: new Date().toISOString()
+              });
+              reportedDomains.add(domain);
+            }
+            res.status(404).send('Favicon fetch failed');
+            return;
+      }
+
+      const arr = await winningResponse.arrayBuffer();
+      buffer = Buffer.from(arr);
+      mime = winningResponse.headers.get('content-type') || 'image/png';
+      sourceName = winningSource;
+    }
+
+    // --- Processing Step (PNG Flattening) ---
+    // If PNG, try to parse/analyze/flatten
+    if (mime === 'image/png') {
         const parsed = parsePNG(buffer);
         if (parsed) {
           const { transparentRatio, avgLuma } = analyzeRGBA(parsed.data);
@@ -452,7 +512,7 @@ export default async function handler(req, res) {
               if (!silent && !reportedDomains.has(domain)) {
                 await reportToFormspree({
                   event: 'flattened',
-                  source: 'custom',
+                  source: sourceName,
                   domain: domain || null,
                   original: rawOriginal,
                   transparentRatio: Number(transparentRatio.toFixed(4)),
@@ -472,78 +532,13 @@ export default async function handler(req, res) {
           }
         }
       }
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Content-Type', 'text/plain');
-      res.status(200).send(dataURI);
-      return;
-    }
 
-    // Default: fetch from Google favicon service
-    source = 'google';
-    const response = await fetch(`https://www.google.com/s2/favicons?sz=256&domain=${domain}`);
-    if (!response.ok) {
-      // Report Google 404 (or other non-ok) to Formspree only when it's a 4xx status,
-      // and only if not silent and not already reported.
-      if (!silent && (response.status === 404 || (response.status >= 400 && response.status < 500))) {
-        if (!reportedDomains.has(domain)) {
-          await reportToFormspree({
-            event: 'google_404_or_4xx',
-            source: 'google',
-            domain,
-            original: rawOriginal,
-            status: response.status,
-            timestamp: new Date().toISOString()
-          });
-          reportedDomains.add(domain);
-        }
-      }
-      res.status(response.status).send('Favicon fetch failed');
-      return;
-    }
-    const arr = await response.arrayBuffer();
-    const buf = Buffer.from(arr);
-    const contentType = response.headers.get('content-type') || 'image/png';
-    // If PNG, try to parse/analyze/flatten
-    if (contentType === 'image/png') {
-      const parsed = parsePNG(buf);
-      if (parsed) {
-        const { transparentRatio, avgLuma } = analyzeRGBA(parsed.data);
-        if (transparentRatio >= TRANSPARENT_RATIO_THRESHOLD) {
-          const bgHex = avgLuma < LUMINANCE_THRESHOLD ? '#ffffff' : '#000000';
-          try {
-            const flattened = flattenRGBA(parsed.data, bgHex);
-            const pngOut = encodePNG(flattened, parsed.width, parsed.height);
-            const outDataURI = bufferToDataURI(pngOut, 'image/png');
-
-            // Report flatten event to Formspree (source: google) if not silent and not already reported
-            if (!silent && !reportedDomains.has(domain)) {
-              await reportToFormspree({
-                event: 'flattened',
-                source: 'google',
-                domain,
-                original: rawOriginal,
-                transparentRatio: Number(transparentRatio.toFixed(4)),
-                avgLuma: Math.round(avgLuma),
-                timestamp: new Date().toISOString()
-              });
-              reportedDomains.add(domain);
-            }
-
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Content-Type', 'text/plain');
-            res.status(200).send(outDataURI);
-            return;
-          } catch (e) {
-            // fallback to original
-          }
-        }
-      }
-    }
-
-    const originalURI = bufferToDataURI(buf, contentType);
+    // Default return
+    const originalURI = bufferToDataURI(buffer, mime);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'text/plain');
     res.status(200).send(originalURI);
+
   } catch (err) {
     console.error('favfetch error:', err && err.message);
     // minimal server error report (only if not silent)
