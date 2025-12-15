@@ -448,6 +448,8 @@ export default async function handler(req, res) {
       const promises = sources.map(async (src) => {
         try {
           const r = await fetch(src.url);
+          // Only use responses that are strictly 200-299 OK.
+          // This prevents using 404 pages that might contain images (fallbacks).
           if (r.ok) {
               const contentType = r.headers.get('content-type');
               if (contentType && (contentType.startsWith('image/') || contentType === 'application/octet-stream')) {
