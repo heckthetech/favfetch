@@ -1,23 +1,20 @@
-const customFavicons = {
-  'web.whatsapp.com': 'https://heckthetech.github.io/favfetch/api/whatsapp.webp',
-  'whatsapp://': 'https://heckthetech.github.io/favfetch/api/whatsapp.webp',
-  'tg://': 'https://www.google.com/s2/favicons?sz=256&domain=web.telegram.org',
-  'messenger.com': 'https://heckthetech.github.io/favfetch/api/messenger.webp',
-  'youtube.com/watch?v=dQw4w9WgXcQ': 'https://heckthetech.github.io/favfetch/api/rick.gif',
-  'youtu.be/dQw4w9WgXcQ': 'https://heckthetech.github.io/favfetch/api/rick.gif',
-  'rickastley.co.uk': 'https://heckthetech.github.io/favfetch/api/rick.gif',
-  'aparsclassroom.com': 'https://heckthetech.github.io/favfetch/api/acs.webp',
-  'mail.google.com': 'https://heckthetech.github.io/favfetch/api/gmail.webp',
-  'drive.google.com': 'https://heckthetech.github.io/favfetch/api/gdrive.webp',
-  'docs.google.com': 'https://heckthetech.github.io/favfetch/api/gdocs.webp',
-  'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.webp',
-  'excel.cloud.microsoft': 'https://heckthetech.github.io/favfetch/api/msexcel.webp',
-  'gilmannewport.portalced.com': 'https://heckthetech.github.io/favfetch/api/gilm.webp',
-  'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp',
-  '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp',
-  'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp',
-  'robininsights.github.io': 'https://heckthetech.github.io/favfetch/api/robininsights.webp'
-  
-
-
-};
+{
+  "web.whatsapp.com": "https://heckthetech.github.io/favfetch/api/whatsapp.webp",
+  "whatsapp://": "https://heckthetech.github.io/favfetch/api/whatsapp.webp",
+  "tg://": "https://www.google.com/s2/favicons?sz=256&domain=web.telegram.org",
+  "messenger.com": "https://heckthetech.github.io/favfetch/api/messenger.webp",
+  "youtube.com/watch?v=dQw4w9WgXcQ": "https://heckthetech.github.io/favfetch/api/rick.gif",
+  "youtu.be/dQw4w9WgXcQ": "https://heckthetech.github.io/favfetch/api/rick.gif",
+  "rickastley.co.uk": "https://heckthetech.github.io/favfetch/api/rick.gif",
+  "aparsclassroom.com": "https://heckthetech.github.io/favfetch/api/acs.webp",
+  "mail.google.com": "https://heckthetech.github.io/favfetch/api/gmail.webp",
+  "drive.google.com": "https://heckthetech.github.io/favfetch/api/gdrive.webp",
+  "docs.google.com": "https://heckthetech.github.io/favfetch/api/gdocs.webp",
+  "heckthetech.github.io/ecplay": "https://heckthetech.github.io/favfetch/api/chronaplay.webp",
+  "excel.cloud.microsoft": "https://heckthetech.github.io/favfetch/api/msexcel.webp",
+  "gilmannewport.portalced.com": "https://heckthetech.github.io/favfetch/api/gilm.webp",
+  "bingx.com": "https://heckthetech.github.io/favfetch/api/bingx.webp",
+  "1337x": "https://heckthetech.github.io/favfetch/api/13xx.webp",
+  "rtdslive.com": "https://heckthetech.github.io/favfetch/api/rtds.webp",
+  "robininsights.github.io": "https://heckthetech.github.io/favfetch/api/robininsights.webp"
+}
