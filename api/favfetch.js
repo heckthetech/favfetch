@@ -436,7 +436,6 @@ export default async function handler(req, res) {
       // New Logic: Fetch from best source (replicates c.js strategy)
       // Sources to race/check
       const sources = [
-        { url: `https://unavatar.io/${domain}`, name: 'unavatar' },
         { url: `https://logo.clearbit.com/${domain}?size=512`, name: 'clearbit' },
         { url: `https://www.google.com/s2/favicons?sz=256&domain=${domain}`, name: 'google' },
         { url: `https://icons.duckduckgo.com/ip3/${domain}.ico`, name: 'ddg' }
