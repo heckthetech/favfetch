@@ -320,22 +320,64 @@ function analyzeRGBA(rgbaBuf) {
 }
 
 // Flatten RGBA pixels over background color hex '#rrggbb'
-function flattenRGBA(rgbaBuf, bgHex) {
+// Scales the image to 80% and centers it on the background
+function flattenRGBA(rgbaBuf, width, height, bgHex) {
   const bgR = parseInt(bgHex.slice(1,3), 16);
   const bgG = parseInt(bgHex.slice(3,5), 16);
   const bgB = parseInt(bgHex.slice(5,7), 16);
-  const out = Buffer.alloc(rgbaBuf.length);
-  for (let i = 0; i < rgbaBuf.length; i += 4) {
-    const r = rgbaBuf[i], g = rgbaBuf[i+1], b = rgbaBuf[i+2], a = rgbaBuf[i+3] / 255;
-    // alpha composite over bg
-    const nr = Math.round(r * a + bgR * (1 - a));
-    const ng = Math.round(g * a + bgG * (1 - a));
-    const nb = Math.round(b * a + bgB * (1 - a));
-    out[i] = nr;
-    out[i+1] = ng;
-    out[i+2] = nb;
+  
+  // Output buffer same dimensions as input
+  const out = Buffer.alloc(width * height * 4);
+
+  // 1. Fill entire buffer with background color
+  for (let i = 0; i < out.length; i += 4) {
+    out[i] = bgR;
+    out[i+1] = bgG;
+    out[i+2] = bgB;
     out[i+3] = 255;
   }
+
+  // 2. Draw scaled image (80%) in center
+  const scale = 0.8;
+  const scaledW = Math.floor(width * scale);
+  const scaledH = Math.floor(height * scale);
+  const offX = Math.floor((width - scaledW) / 2);
+  const offY = Math.floor((height - scaledH) / 2);
+
+  for (let y = 0; y < scaledH; y++) {
+    for (let x = 0; x < scaledW; x++) {
+      // Nearest neighbor mapping from scaled space back to original space
+      const srcX = Math.floor(x / scale);
+      const srcY = Math.floor(y / scale);
+      
+      // Clamp coordinates to stay within bounds
+      const sX = Math.min(srcX, width - 1);
+      const sY = Math.min(srcY, height - 1);
+      
+      const srcIdx = (sY * width + sX) * 4;
+      
+      const r = rgbaBuf[srcIdx];
+      const g = rgbaBuf[srcIdx+1];
+      const b = rgbaBuf[srcIdx+2];
+      const a = rgbaBuf[srcIdx+3] / 255;
+
+      const dstX = x + offX;
+      const dstY = y + offY;
+      const dstIdx = (dstY * width + dstX) * 4;
+
+      // Alpha composite over the background color (already in 'out')
+      // Formula: pixel = source * alpha + bg * (1 - alpha)
+      const nr = Math.round(r * a + bgR * (1 - a));
+      const ng = Math.round(g * a + bgG * (1 - a));
+      const nb = Math.round(b * a + bgB * (1 - a));
+      
+      out[dstIdx] = nr;
+      out[dstIdx+1] = ng;
+      out[dstIdx+2] = nb;
+      out[dstIdx+3] = 255;
+    }
+  }
+
   return out;
 }
 
@@ -503,9 +545,11 @@ export default async function handler(req, res) {
         if (parsed) {
           const { transparentRatio, avgLuma } = analyzeRGBA(parsed.data);
           if (transparentRatio >= TRANSPARENT_RATIO_THRESHOLD) {
-            const bgHex = avgLuma < LUMINANCE_THRESHOLD ? '#ffffff' : '#000000';
+            // Updated background color logic: #1f1f1f instead of #000000
+            const bgHex = avgLuma < LUMINANCE_THRESHOLD ? '#ffffff' : '#1f1f1f';
             try {
-              const flattened = flattenRGBA(parsed.data, bgHex);
+              // Updated call: passing width and height to support resizing
+              const flattened = flattenRGBA(parsed.data, parsed.width, parsed.height, bgHex);
               const pngOut = encodePNG(flattened, parsed.width, parsed.height);
               const outDataURI = bufferToDataURI(pngOut, 'image/png');
 
