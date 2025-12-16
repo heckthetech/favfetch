@@ -1,4 +1,3 @@
-// Force Node.js runtime
 export const config = {
   runtime: 'nodejs',
 };
@@ -6,18 +5,15 @@ export const config = {
 /*
   Favfetch.js.
   - Fetches image bytes (custom mapping or Google s2/favicons).
-  - If PNG, parse it (supports non-interlaced, bitDepth=8, color types 6,2,0,3).
   - Compute transparent ratio and avg luminance of non-transparent pixels.
   - If >=50% transparent -> flatten onto white or black depending on avg luminance.
-  - Re-encode flattened PNG using zlib deflate; return data:image/png;base64,...
-  - On any failure or non-PNG -> return original data URI.
-  - Reports to Formspree for:
-      * Google 404/4xx responses (no favicon)
+  - Re-encode flattened PNG and return data:image/png;base64,...
+  - Reports to author for:
+      * 404/4xx responses (no favicon)
       * Any time a PNG was flattened (transparent -> background filled)
-      * Minimal server errors
+      * server errors
   - Supports bracketed fetch param: ?fetch={http://example.com/path}
-  - Supports silent reporting: &silent=true   (when true -> no Formspree posts)
-*/
+  */
 
 // Simple in-memory dedupe (resets on cold start / redeploy — intended)
 const reportedDomains = new Set();
@@ -43,7 +39,9 @@ const customFavicons = {
   'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp',
   '1337x': 'https://heckthetech.github.io/favfetch/api/13xx.webp',
   'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp',
-  'robininsights.github.io': 'https://heckthetech.github.io/favfetch/api/robininsights.webp'
+  'robininsights.github.io': 'https://heckthetech.github.io/favfetch/api/robininsights.webp',
+  'github.com': 'https://heckthetech.github.io/favfetch/api/github.webp',
+  'photos.google.com': 'https://heckthetech.github.io/favfetch/api/photos.webp'
 };
 
 
