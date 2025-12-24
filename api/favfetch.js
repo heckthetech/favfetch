@@ -404,6 +404,8 @@ async function reportToFormspree(payload) {
 
 export default async function handler(req, res) {
   let rawParam = req.query.fetch;
+  const region = req.query.region || null;
+
   if (!rawParam) {
     res.status(400).send('Missing fetch param');
     return;
@@ -522,6 +524,7 @@ export default async function handler(req, res) {
                 source: 'all',
                 domain,
                 original: rawOriginal,
+                region,
                 timestamp: new Date().toISOString()
               });
               reportedDomains.add(domain);
@@ -558,6 +561,7 @@ export default async function handler(req, res) {
                   source: sourceName,
                   domain: domain || null,
                   original: rawOriginal,
+                  region,
                   transparentRatio: Number(transparentRatio.toFixed(4)),
                   avgLuma: Math.round(avgLuma),
                   timestamp: new Date().toISOString()
@@ -590,6 +594,7 @@ export default async function handler(req, res) {
         await reportToFormspree({
           event: 'server_error',
           domain: (req.query.fetch || '').toString().slice(0, 200),
+          region,
           message: err && err.message,
           timestamp: new Date().toISOString()
         });
