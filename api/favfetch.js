@@ -26,7 +26,7 @@ const customFavicons = {
   'whatsapp://': 'https://heckthetech.github.io/favfetch/api/whatsapp.webp',
   'tg://': 'https://www.google.com/s2/favicons?sz=256&domain=web.telegram.org',
   'coolnewtab://': 'https://heckthetech.github.io/favfetch/api/cntgl.webp',
-  'steam://': 'https://heckthetech.github.io/favfetch/api/steaml.webp',
+  'steam://': 'https://heckthetech.github.io/favfetch/api/steaml.gif',
   'com.epicgames.launcher://': 'https://heckthetech.github.io/favfetch/api/epicl.webp',
   'messenger.com': 'https://heckthetech.github.io/favfetch/api/messenger.webp',
   'youtube.com/watch?v=dQw4w9WgXcQ': 'https://heckthetech.github.io/favfetch/api/rick.gif',
