@@ -43,6 +43,7 @@ const customFavicons = {
   'rtdslive.com': 'https://heckthetech.github.io/favfetch/api/rtds.webp',
   'robininsights.github.io': 'https://heckthetech.github.io/favfetch/api/robininsights.webp',
   'github.com': 'https://heckthetech.github.io/favfetch/api/github.webp',
+  'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.webp',
   'photos.google.com': 'https://heckthetech.github.io/favfetch/api/photos.webp',
   'epicgames.com': 'https://heckthetech.github.io/favfetch/api/epic.webp'
 };
