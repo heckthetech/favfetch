@@ -36,7 +36,6 @@ const customFavicons = {
   'mail.google.com': 'https://heckthetech.github.io/favfetch/api/gmail.webp',
   'drive.google.com': 'https://heckthetech.github.io/favfetch/api/gdrive.webp',
   'docs.google.com': 'https://heckthetech.github.io/favfetch/api/gdocs.webp',
-  'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.webp',
   'excel.cloud.microsoft': 'https://heckthetech.github.io/favfetch/api/msexcel.webp',
   'gilmannewport.portalced.com': 'https://heckthetech.github.io/favfetch/api/gilm.webp',
   'bingx.com': 'https://heckthetech.github.io/favfetch/api/bingx.webp',
