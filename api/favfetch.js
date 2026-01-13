@@ -45,7 +45,8 @@ const customFavicons = {
   'github.com': 'https://heckthetech.github.io/favfetch/api/github.webp',
   'heckthetech.github.io/ecplay': 'https://heckthetech.github.io/favfetch/api/chronaplay.webp',
   'photos.google.com': 'https://heckthetech.github.io/favfetch/api/photos.webp',
-  'epicgames.com': 'https://heckthetech.github.io/favfetch/api/epic.webp'
+  'epicgames.com': 'https://heckthetech.github.io/favfetch/api/epic.webp',
+  'medico.com.bd': 'https://heckthetech.github.io/favfetch/api/userrequested/medico.webp'
 };
 
 
