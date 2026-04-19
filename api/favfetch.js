@@ -48,7 +48,8 @@ const customFavicons = {
   'photos.google.com': 'https://heckthetech.github.io/favfetch/api/photos.webp',
   'epicgames.com': 'https://heckthetech.github.io/favfetch/api/epic.webp',
   'medico.com.bd': 'https://heckthetech.github.io/favfetch/api/userrequested/medico.webp',
-  'pinterest.com': 'https://heckthetech.github.io/favfetch/api/userrequested/Pinterest.webp'
+  'pinterest.com': 'https://heckthetech.github.io/favfetch/api/userrequested/Pinterest.webp',
+  'clipchamp.com': 'https://heckthetech.github.io/favfetch/api/userrequested/clipchamp.webp'
 };
 
 
